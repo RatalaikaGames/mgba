@@ -6,6 +6,8 @@
 #ifndef VFS_H
 #define VFS_H
 
+#include "mgba_extra_incs.h"  //RG - added
+
 #include <mgba-util/common.h>
 
 CXX_GUARD_START

@@ -749,7 +749,7 @@ static void _mCoreLog(struct mLogger* logger, int category, enum mLogLevel level
 struct mCoreThread* mCoreThreadGet(void) {
 	return NULL;
 }
-#endif
+//#endif  //RG - fixed
 
 struct mLogger* mCoreThreadLogger(void) {
 	struct mCoreThread* thread = mCoreThreadGet();
@@ -759,3 +759,4 @@ struct mLogger* mCoreThreadLogger(void) {
 	return NULL;
 }
 
+#endif  //RG - fixed

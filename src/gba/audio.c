@@ -400,47 +400,68 @@ void GBAAudioSample(struct GBAAudio* audio, int32_t timestamp) {
 	}
 }
 
+//RG HACKS
+void mgba_hack_postAudio(struct mAVStream* stream, int clock, int16_t left, int16_t right);
+
 static void _sample(struct mTiming* timing, void* user, uint32_t cyclesLate) {
 	struct GBAAudio* audio = user;
 	GBAAudioSample(audio, mTimingCurrentTime(&audio->p->timing) - cyclesLate);
 
 	int samples = 2 << GBARegisterSOUNDBIASGetResolution(audio->soundbias);
+	int times = 1 << (3 - GBARegisterSOUNDBIASGetResolution(audio->soundbias));
 	memset(audio->chA.samples, audio->chA.samples[samples - 1], sizeof(audio->chA.samples));
 	memset(audio->chB.samples, audio->chB.samples[samples - 1], sizeof(audio->chB.samples));
 
 	mCoreSyncLockAudio(audio->p->sync);
 	unsigned produced;
 	int i;
-	for (i = 0; i < samples; ++i) {
+
+	//RG HACK - change how samples are set to frontend to allow it to fully handle audio processing
+	for (i = 0; i < samples; ++i)
+	{
+		//32 -> 0 -> 8 times [samples is 2]
+		//64 -> 1 -> 4 times [samples is 4]
+		//128 -> 2 -> 2 times [samples is 8]
+		//256 -> 3 -> 1 times [samples is 16]
 		int16_t sampleLeft = audio->currentSamples[i].left;
 		int16_t sampleRight = audio->currentSamples[i].right;
-		if ((size_t) blip_samples_avail(audio->psg.left) < audio->samples) {
-			blip_add_delta(audio->psg.left, audio->clock, sampleLeft - audio->lastLeft);
-			blip_add_delta(audio->psg.right, audio->clock, sampleRight - audio->lastRight);
-			audio->lastLeft = sampleLeft;
-			audio->lastRight = sampleRight;
-			audio->clock += audio->sampleInterval;
-			if (audio->clock >= CLOCKS_PER_FRAME) {
-				blip_end_frame(audio->psg.left, CLOCKS_PER_FRAME);
-				blip_end_frame(audio->psg.right, CLOCKS_PER_FRAME);
-				audio->clock -= CLOCKS_PER_FRAME;
-			}
-		}
 
-		if (audio->p->stream && audio->p->stream->postAudioFrame) {
-			audio->p->stream->postAudioFrame(audio->p->stream, sampleLeft, sampleRight);
-		}
-	}
-	produced = blip_samples_avail(audio->psg.left);
-	bool wait = produced >= audio->samples;
-	if (!mCoreSyncProduceAudio(audio->p->sync, audio->psg.left, audio->samples)) {
-		// Interrupted
-		audio->p->earlyExit = true;
+		int j;
+		for(j=0;j<times;j++)
+			mgba_hack_postAudio(audio->p->stream, 0, sampleLeft, sampleRight);
 	}
 
-	if (wait && audio->p->stream && audio->p->stream->postAudioBuffer) {
-		audio->p->stream->postAudioBuffer(audio->p->stream, audio->psg.left, audio->psg.right);
-	}
+	//for (i = 0; i < samples; ++i) {
+	//	int16_t sampleLeft = audio->currentSamples[i].left;
+	//	int16_t sampleRight = audio->currentSamples[i].right;
+
+	//	if ((size_t) blip_samples_avail(audio->psg.left) < audio->samples) {
+	//		blip_add_delta(audio->psg.left, audio->clock, sampleLeft - audio->lastLeft);
+	//		blip_add_delta(audio->psg.right, audio->clock, sampleRight - audio->lastRight);
+	//		audio->lastLeft = sampleLeft;
+	//		audio->lastRight = sampleRight;
+	//		audio->clock += audio->sampleInterval;
+	//		if (audio->clock >= CLOCKS_PER_FRAME) {
+	//			blip_end_frame(audio->psg.left, CLOCKS_PER_FRAME);
+	//			blip_end_frame(audio->psg.right, CLOCKS_PER_FRAME);
+	//			audio->clock -= CLOCKS_PER_FRAME;
+	//		}
+	//	}
+
+	//	if (audio->p->stream && audio->p->stream->postAudioFrame) {
+	//		audio->p->stream->postAudioFrame(audio->p->stream, sampleLeft, sampleRight);
+	//	}
+	//}
+	//produced = blip_samples_avail(audio->psg.left);
+	//bool wait = produced >= audio->samples;
+	//if (!mCoreSyncProduceAudio(audio->p->sync, audio->psg.left, audio->samples)) {
+	//	// Interrupted
+	//	audio->p->earlyExit = true;
+	//}
+
+	//if (wait && audio->p->stream && audio->p->stream->postAudioBuffer) {
+	//	audio->p->stream->postAudioBuffer(audio->p->stream, audio->psg.left, audio->psg.right);
+	//}
 
 	mTimingSchedule(timing, &audio->sampleEvent, SAMPLE_INTERVAL - cyclesLate);
 }

@@ -231,7 +231,7 @@ void mCoreConfigDirectory(char* out, size_t outLength) {
 			return;
 		}
 	}
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WHY_ARENT_WE_USING_VFS_FOR_THIS) //RG - changed
 	WCHAR wpath[MAX_PATH];
 	WCHAR wprojectName[MAX_PATH];
 	WCHAR* home;
@@ -261,6 +261,8 @@ void mCoreConfigDirectory(char* out, size_t outLength) {
 	find_directory(B_USER_SETTINGS_DIRECTORY, 0, false, path, B_PATH_NAME_LENGTH);
 	snprintf(out, outLength, "%s/%s", path, binaryName);
 	mkdir(out, 0755);
+#elif defined(WHY_ARENT_WE_USING_VFS_FOR_THIS) //RG - changed
+	VDirCreate("/home");
 #else
 	char* xdgConfigHome = getenv("XDG_CONFIG_HOME");
 	if (xdgConfigHome && xdgConfigHome[0] == '/') {
@@ -277,7 +279,9 @@ void mCoreConfigDirectory(char* out, size_t outLength) {
 }
 
 void mCoreConfigPortablePath(char* out, size_t outLength) {
-#ifdef _WIN32
+#if defined(WHY_ARENT_WE_USING_VFS_FOR_THIS) //RG - changed
+	out[0] = '\0';
+	#elif defined(_WIN32)
 	wchar_t wpath[MAX_PATH];
 	HMODULE hModule = GetModuleHandleW(NULL);
 	GetModuleFileNameW(hModule, wpath, MAX_PATH);

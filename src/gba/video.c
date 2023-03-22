@@ -137,6 +137,9 @@ void GBAVideoAssociateRenderer(struct GBAVideo* video, struct GBAVideoRenderer* 
 	}
 }
 
+//RG HACKS
+void mgba_hack_onVideoEvent(struct GBAVideo* video, int whichEvent);
+
 void _startHdraw(struct mTiming* timing, void* context, uint32_t cyclesLate) {
 	struct GBAVideo* video = context;
 	video->event.callback = _startHblank;
@@ -147,6 +150,9 @@ void _startHdraw(struct mTiming* timing, void* context, uint32_t cyclesLate) {
 		video->vcount = 0;
 	}
 	video->p->memory.io[REG_VCOUNT >> 1] = video->vcount;
+
+	//RG HACKS
+	mgba_hack_onVideoEvent(video,0);
 
 	if (video->vcount < GBA_VIDEO_VERTICAL_PIXELS) {
 		video->shouldStall = 1;

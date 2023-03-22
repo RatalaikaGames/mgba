@@ -151,6 +151,7 @@ struct GBAVideoSoftwareRenderer {
 
 void GBAVideoSoftwareRendererCreate(struct GBAVideoSoftwareRenderer* renderer);
 
-CXX_GUARD_START
+//RG - fixed bug
+CXX_GUARD_END
 
 #endif

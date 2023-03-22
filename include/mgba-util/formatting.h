@@ -8,6 +8,8 @@
 
 #include <mgba-util/common.h>
 
+#include "mgba_extra_incs.h" //RG - added
+
 CXX_GUARD_START
 
 #include "locale.h"
